@@ -25,15 +25,15 @@ const LoginScreen = ({ navigation }) => {
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [recoverEmail, setRecoverEmail] = useState('');
   
-  // Estados para el formulario de registro
+  // Estados para el formulario de registro (CORREGIDO)
   const [registerData, setRegisterData] = useState({
+    cedula: '',          // Campo obligatorio según API
     nombre: '',
     apellido: '',
     correo: '',
     password: '',
     confirmPassword: '',
     telefono: '',
-    matricula: '',
   });
 
   // Validar formato de email
@@ -48,10 +48,16 @@ const LoginScreen = ({ navigation }) => {
     return re.test(phone);
   };
 
-  // Validar matrícula (ejemplo: 2021-0123)
-  const isValidMatricula = (matricula) => {
-    const re = /^\d{4}-\d{4}$/;
-    return re.test(matricula);
+  // Validar cédula (formato RD: 001-1234567-8 o 12345678901)
+  const isValidCedula = (cedula) => {
+    // Eliminar guiones y espacios
+    const cleaned = cedula.replace(/[- ]/g, '');
+    
+    // Verificar que sea solo números y tenga entre 11-13 caracteres
+    if (!/^\d+$/.test(cleaned)) return false;
+    if (cleaned.length < 11 || cleaned.length > 13) return false;
+    
+    return true;
   };
 
   // Validar contraseña (mínimo 8 caracteres, al menos una mayúscula y un número)
@@ -111,13 +117,18 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  // Registrar nuevo usuario
+  // Registrar nuevo usuario (CORREGIDO)
   const onRegister = async () => {
     // Validaciones
-    const { nombre, apellido, correo, password, confirmPassword, telefono, matricula } = registerData;
+    const { cedula, nombre, apellido, correo, password, confirmPassword, telefono } = registerData;
     
-    if (!nombre.trim() || !apellido.trim() || !correo.trim() || !password || !confirmPassword || !telefono.trim() || !matricula.trim()) {
+    if (!cedula.trim() || !nombre.trim() || !apellido.trim() || !correo.trim() || !password || !confirmPassword || !telefono.trim()) {
       Alert.alert('Error', 'Todos los campos son obligatorios');
+      return;
+    }
+
+    if (!isValidCedula(cedula)) {
+      Alert.alert('Error', 'La cédula debe tener entre 11 y 13 dígitos numéricos');
       return;
     }
 
@@ -128,11 +139,6 @@ const LoginScreen = ({ navigation }) => {
 
     if (!isValidPhone(telefono)) {
       Alert.alert('Error', 'El teléfono debe tener 10 dígitos (ej: 8091234567)');
-      return;
-    }
-
-    if (!isValidMatricula(matricula)) {
-      Alert.alert('Error', 'La matrícula debe tener el formato: 2021-0123');
       return;
     }
 
@@ -151,53 +157,74 @@ const LoginScreen = ({ navigation }) => {
       
       // Preparar datos para enviar a la API
       const userData = {
+        cedula: cedula.trim().replace(/[- ]/g, ''), // Limpiar formato
         nombre: nombre.trim(),
         apellido: apellido.trim(),
         correo: correo.trim(),
         password: password,
         telefono: telefono.trim(),
-        matricula: matricula.trim(),
       };
 
+      console.log('Registrando usuario con datos:', userData);
+      
       // Llamar a la API de registro
       const response = await registerApi(userData);
       
+      console.log('Respuesta del registro:', response);
+      
       Alert.alert(
-        'Registro exitoso',
-        'Tu cuenta ha sido creada exitosamente. Ahora puedes iniciar sesión.',
+        '¡Registro exitoso!',
+        'Tu cuenta ha sido creada exitosamente. ' + 
+        (response.token ? 'Ya puedes iniciar sesión.' : 'Espera la confirmación del administrador.'),
         [
           {
             text: 'Aceptar',
             onPress: () => {
               setShowRegisterForm(false);
               setRegisterData({
+                cedula: '',
                 nombre: '',
                 apellido: '',
                 correo: '',
                 password: '',
                 confirmPassword: '',
                 telefono: '',
-                matricula: '',
               });
+              
+              // Si recibimos token, intentar login automático
+              if (response.token && response.usuario) {
+                const session = {
+                  userId: response.usuario.id || '',
+                  nombre: `${response.usuario.nombre || ''} ${response.usuario.apellido || ''}`.trim(),
+                  correo: response.usuario.correo || correo.trim(),
+                  token: response.token,
+                };
+                loginUser(session);
+              }
             },
           },
         ]
       );
       
     } catch (error) {
+      console.error('Error en registro:', error);
       let errorMessage = 'Error al registrar usuario';
       
-      if (error.message.includes('ya existe')) {
-        errorMessage = 'Este correo electrónico ya está registrado';
-      } else if (error.message.includes('matrícula')) {
-        errorMessage = 'La matrícula ya está registrada';
-      } else if (error.message.includes('red')) {
+      if (error.message.includes('ya existe') || error.message.includes('existente')) {
+        errorMessage = 'Esta cédula o correo electrónico ya está registrado';
+      } else if (error.message.includes('cédula') || error.message.includes('cedula')) {
+        errorMessage = 'Formato de cédula inválido';
+      } else if (error.message.includes('correo') || error.message.includes('email')) {
+        errorMessage = 'Formato de correo inválido';
+      } else if (error.message.includes('404') || error.message.includes('no encontrado')) {
+        errorMessage = 'El endpoint de registro no está disponible. Contacta al administrador';
+      } else if (error.message.includes('red') || error.message.includes('network')) {
         errorMessage = 'Error de conexión. Verifique su internet';
       } else {
         errorMessage = error.message;
       }
       
-      Alert.alert('Error', errorMessage);
+      Alert.alert('Error en registro', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -217,7 +244,9 @@ const LoginScreen = ({ navigation }) => {
 
     try {
       setLoading(true);
-      await recoverPasswordApi(recoverEmail.trim());
+      const response = await recoverPasswordApi(recoverEmail.trim());
+      
+      console.log('Respuesta de recuperación:', response);
       
       Alert.alert(
         'Recuperación enviada',
@@ -225,11 +254,13 @@ const LoginScreen = ({ navigation }) => {
         [
           {
             text: 'Aceptar',
-            onPress: () => setShowRecoverForm(false),
+            onPress: () => {
+              setShowRecoverForm(false);
+              setRecoverEmail('');
+            },
           },
         ]
       );
-      setRecoverEmail('');
       
     } catch (error) {
       let errorMessage = 'Error al procesar la solicitud';
@@ -257,13 +288,13 @@ const LoginScreen = ({ navigation }) => {
   const toggleRegisterForm = () => {
     setShowRegisterForm(!showRegisterForm);
     setRegisterData({
+      cedula: '',
       nombre: '',
       apellido: '',
       correo: '',
       password: '',
       confirmPassword: '',
       telefono: '',
-      matricula: '',
     });
   };
 
@@ -341,7 +372,7 @@ const LoginScreen = ({ navigation }) => {
                 onPress={toggleRegisterForm}
                 disabled={loading}
               >
-                <Text style={styles.secondaryButtonText}>Registrarse</Text>
+                <Text style={[styles.secondaryButtonText, { color: '#FFFFFF' }]}>Registrarse</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -417,7 +448,7 @@ const LoginScreen = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Modal para registro */}
+      {/* Modal para registro (CORREGIDO) */}
       <Modal
         visible={showRegisterForm}
         animationType="slide"
@@ -429,10 +460,10 @@ const LoginScreen = ({ navigation }) => {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.modalContainer}
           >
-            <ScrollView style={styles.modalContent}>
+            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Registro de Usuario</Text>
-                <TouchableOpacity onPress={toggleRegisterForm}>
+                <TouchableOpacity onPress={toggleRegisterForm} style={styles.closeButtonContainer}>
                   <Text style={styles.closeButton}>✕</Text>
                 </TouchableOpacity>
               </View>
@@ -441,7 +472,21 @@ const LoginScreen = ({ navigation }) => {
                 Completa todos los campos para crear tu cuenta
               </Text>
 
-              {/* Campos del formulario de registro */}
+              {/* Campos del formulario de registro (CORREGIDOS) */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Cédula *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="00112345678"
+                  keyboardType="numeric"
+                  value={registerData.cedula}
+                  onChangeText={(text) => handleRegisterChange('cedula', text)}
+                  editable={!loading}
+                  maxLength={13}
+                />
+                <Text style={styles.helperText}>11-13 dígitos sin espacios</Text>
+              </View>
+
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Nombre *</Text>
                 <TextInput
@@ -450,6 +495,7 @@ const LoginScreen = ({ navigation }) => {
                   value={registerData.nombre}
                   onChangeText={(text) => handleRegisterChange('nombre', text)}
                   editable={!loading}
+                  autoCapitalize="words"
                 />
               </View>
 
@@ -461,6 +507,7 @@ const LoginScreen = ({ navigation }) => {
                   value={registerData.apellido}
                   onChangeText={(text) => handleRegisterChange('apellido', text)}
                   editable={!loading}
+                  autoCapitalize="words"
                 />
               </View>
 
@@ -489,18 +536,6 @@ const LoginScreen = ({ navigation }) => {
                   maxLength={10}
                 />
                 <Text style={styles.helperText}>10 dígitos sin espacios</Text>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Matrícula *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="2021-0123"
-                  value={registerData.matricula}
-                  onChangeText={(text) => handleRegisterChange('matricula', text)}
-                  editable={!loading}
-                />
-                <Text style={styles.helperText}>Formato: 2021-0123</Text>
               </View>
 
               <View style={styles.inputGroup}>
@@ -556,7 +591,7 @@ const LoginScreen = ({ navigation }) => {
                 <Text style={styles.infoTitle}>Información importante:</Text>
                 <Text style={styles.infoText}>
                   • Todos los campos son obligatorios{"\n"}
-                  • Tu matrícula será verificada por el administrador{"\n"}
+                  • La cédula será verificada por el administrador{"\n"}
                   • Recibirás un correo de confirmación{"\n"}
                   • Puedes iniciar sesión después del registro
                 </Text>
@@ -616,27 +651,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: '#1B5E20',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   input: {
     borderWidth: 1,
     borderColor: '#C8E6C9',
     borderRadius: 10,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     fontSize: 16,
     backgroundColor: '#FAFAFA',
     color: '#333',
   },
   button: {
     backgroundColor: '#2E7D32',
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -655,7 +690,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     borderWidth: 1,
     borderColor: '#DDD',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -691,13 +726,14 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: 12,
     color: '#666',
-    marginBottom: 20,
-    lineHeight: 18,
+    marginTop: 4,
+    lineHeight: 16,
   },
   recoverButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 10,
+    marginTop: 10,
   },
   // Estilos del Modal
   modalOverlay: {
@@ -707,7 +743,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     margin: 20,
-    maxHeight: '80%',
+    maxHeight: '85%',
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
@@ -725,11 +761,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1B5E20',
+    flex: 1,
+  },
+  closeButtonContainer: {
+    padding: 4,
   },
   closeButton: {
     fontSize: 24,
     color: '#666',
-    padding: 4,
   },
   modalSubtitle: {
     fontSize: 14,
@@ -758,6 +797,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderLeftWidth: 4,
     borderLeftColor: '#4CAF50',
+    marginTop: 10,
   },
   infoTitle: {
     fontSize: 14,
