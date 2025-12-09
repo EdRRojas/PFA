@@ -1,5 +1,5 @@
 // src/api/medioAmbienteApi.js
-const BASE_URL = 'https://adamix.net/medioambiente/api';
+const BASE_URL = 'https://adamix.net/medioambiente';
 
 const handle = async res => {
   const data = await res.json();
@@ -9,19 +9,20 @@ const handle = async res => {
   return data;
 };
 
-// POST /auth/register - Registrar nuevo usuario (CORREGIDO)
+// POST /auth/register - Registrar nuevo usuario (CON CÉDULA Y MATRÍCULA)
 export const registerApi = async (userData) => {
-  // La API espera 'cedula' como campo obligatorio
+  // Preparar datos para enviar
   const dataToSend = {
-    cedula: userData.cedula || userData.matricula || '', // Usar matrícula si no hay cédula
+    cedula: userData.cedula,
     nombre: userData.nombre,
     apellido: userData.apellido,
     correo: userData.correo,
     password: userData.password,
     telefono: userData.telefono,
+    matricula: userData.matricula,
   };
   
-  console.log('Enviando datos de registro a API:', dataToSend);
+  console.log('Enviando registro a API:', dataToSend);
   
   const res = await fetch(`${BASE_URL}/auth/register`, {
     method: 'POST',
@@ -32,17 +33,16 @@ export const registerApi = async (userData) => {
   return handle(res);
 };
 
-// POST /auth/login - Iniciar sesión
+// ... resto de las funciones permanecen igual
 export const loginApi = async ({ correo, clave }) => {
   const res = await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ correo, clave }),
   });
-  return handle(res); // { token, usuario }
+  return handle(res);
 };
 
-// POST /auth/recover - Recuperar contraseña
 export const recoverPasswordApi = async (correo) => {
   const res = await fetch(`${BASE_URL}/auth/recover`, {
     method: 'POST',
@@ -52,17 +52,6 @@ export const recoverPasswordApi = async (correo) => {
   return handle(res);
 };
 
-// POST /auth/reset - Resetear contraseña
-export const resetPasswordApi = async ({ token, clave_nueva }) => {
-  const res = await fetch(`${BASE_URL}/auth/reset`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, clave_nueva }),
-  });
-  return handle(res);
-};
-
-// PUT /usuarios - (cambiar contraseña o actualizar perfil)
 export const changePasswordApi = async ({ token, clave_actual, clave_nueva }) => {
   const res = await fetch(`${BASE_URL}/usuarios`, {
     method: 'PUT',
@@ -75,13 +64,11 @@ export const changePasswordApi = async ({ token, clave_actual, clave_nueva }) =>
   return handle(res);
 };
 
-// GET /servicios - Listar servicios
 export const getServiciosApi = async () => {
   const res = await fetch(`${BASE_URL}/servicios`);
-  return handle(res); // array de servicios
+  return handle(res);
 };
 
-// GET /auth/me - Obtener datos del usuario actual
 export const getCurrentUserApi = async (token) => {
   const res = await fetch(`${BASE_URL}/auth/me`, {
     method: 'GET',
