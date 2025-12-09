@@ -1,24 +1,36 @@
 {
-  "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "allowJs": true,
-    "checkJs": true,
-    "strict": false,
-    "noEmit": true,
-    "isolatedModules": true,
-    "jsx": "react-native",
-    "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
+    "isolatedModules": true,
+    "jsx": "react-native",
+    "lib": [
+      "esnext"
+    ],
+    "moduleResolution": "node",
+    "noEmit": true,
+    "strict": false,
+    "target": "esnext",
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@components/*": ["./components/*"],
-      "@services/*": ["./services/*"],
-      "@constants/*": ["./constants/*"],
-      "@types/*": ["./types/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@components/*": [
+        "./components/*"
+      ],
+      "@services/*": [
+        "./services/*"
+      ],
+      "@constants/*": [
+        "./constants/*"
+      ],
+      "@types/*": [
+        "./types/*"
+      ]
     }
   },
   "include": [
@@ -39,13 +51,9 @@
     "constants/**/*.js",
     "constants/**/*.jsx",
     "types/**/*.ts",
-    "types/**/*.tsx",
+    "types/*.tsx",
     "types/**/*.js",
-    "types/**/*.jsx",
-    "**/*.ts",
-    "**/*.tsx",
-    "**/*.js",
-    "**/*.jsx"
+    "types/**/*.jsx"
   ],
   "exclude": [
     "node_modules",
@@ -53,5 +61,6 @@
     "expo/AppEntry.ts",
     "*.native.js",
     "*.native.ts"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }

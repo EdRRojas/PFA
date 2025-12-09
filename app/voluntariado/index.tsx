@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { api } from '@services/api';
+import { api } from '../../services/api';
 import { VolunteerFormData } from '../../types';
 
 export default function VoluntariadoScreen() {
