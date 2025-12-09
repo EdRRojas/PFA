@@ -1,28 +1,41 @@
 {
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "lib": ["ES2020", "DOM"],
-    "allowJs": true,  // IMPORTANTE: Permitir archivos .js
-    "checkJs": true,  // Opcional: Verificar tipos en archivos .js
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": false,  // Empieza con false para transición suave
+    "allowJs": true,
+    "checkJs": true,
+    "strict": false,
+    "noEmit": true,
+    "isolatedModules": true,
+    "jsx": "react-native",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.js",  // Incluir archivos JavaScript
-    "src/**/*.tsx",
-    "src/**/*.jsx"
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "app/**/*.js",
+    "app/**/*.jsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "components/**/*.js",
+    "components/**/*.jsx",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx"
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "expo/AppEntry.js",
+    "expo/AppEntry.ts",
+    "*.native.js",
+    "*.native.ts"
   ]
 }
