@@ -14,7 +14,11 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@components/*": ["./components/*"],
+      "@services/*": ["./services/*"],
+      "@constants/*": ["./constants/*"],
+      "@types/*": ["./types/*"]
     }
   },
   "include": [
@@ -26,6 +30,18 @@
     "components/**/*.tsx",
     "components/**/*.js",
     "components/**/*.jsx",
+    "services/**/*.ts",
+    "services/**/*.tsx",
+    "services/**/*.js",
+    "services/**/*.jsx",
+    "constants/**/*.ts",
+    "constants/**/*.tsx",
+    "constants/**/*.js",
+    "constants/**/*.jsx",
+    "types/**/*.ts",
+    "types/**/*.tsx",
+    "types/**/*.js",
+    "types/**/*.jsx",
     "**/*.ts",
     "**/*.tsx",
     "**/*.js",
