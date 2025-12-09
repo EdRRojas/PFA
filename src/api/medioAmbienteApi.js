@@ -9,13 +9,26 @@ const handle = async res => {
   return data;
 };
 
-// POST /auth/register - Registrar nuevo usuario
+// POST /auth/register - Registrar nuevo usuario (CORREGIDO)
 export const registerApi = async (userData) => {
+  // La API espera 'cedula' como campo obligatorio
+  const dataToSend = {
+    cedula: userData.cedula || userData.matricula || '', // Usar matrícula si no hay cédula
+    nombre: userData.nombre,
+    apellido: userData.apellido,
+    correo: userData.correo,
+    password: userData.password,
+    telefono: userData.telefono,
+  };
+  
+  console.log('Enviando datos de registro a API:', dataToSend);
+  
   const res = await fetch(`${BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(userData),
+    body: JSON.stringify(dataToSend),
   });
+  
   return handle(res);
 };
 
